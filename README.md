@@ -18,8 +18,10 @@ You don't need an installation of Firebird Server.
 
 ## Usage
 
+### Convert (to a higher ODS version)
+
 ```powershell
-.\Firebird-Convert.ps1 [-SourceFile] <string> [[-TargetVersion] <string>] [[-User] <string>] [[-Password] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+.\Firebird-Convert.ps1 -SourceFile <string> -TargetVersion <string> [-User <string>] [-Password <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Inform the source database through `-SourceFile` parameter. The ODS version will be detected automatically.
@@ -32,11 +34,24 @@ Currently allowed conversions are:
   - From `fb25` to `fb40`
   - From `fb30` to `fb40`
 
-The `-WhatIf` switch may be used to display the operations without actually execute them.
+Target database will have the same name as source plus the target version added as suffix.
 
 
 
-### Additional parameters:
+### Rebuild (with same ODS version)
+
+```powershell
+.\Firebird-Convert.ps1 -SourceFile <string> -RebuildOnly [-User <string>] [-Password <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Inform the source database through `-SourceFile` parameter. The ODS version will be detected automatically.
+
+Target database will have the same name as source plus the suffix `.CERT`.
+
+
+
+### Common parameters:
 
   - `-User`: Firebird username. Default = `SYSDBA`.
   - `-Password`: Firebird password. Default = `masterkey`.
+  - `-WhatIf`: Display the operations without actually execute them.

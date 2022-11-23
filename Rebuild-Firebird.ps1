@@ -20,7 +20,11 @@ Param(
     [String]$User = 'SYSDBA',
 
     [Parameter()]
-    [String]$Password = 'masterkey'
+    [String]$Password = 'masterkey',
+
+    [Parameter()]
+    [String]$TargetFile = $null
+
 )
 
 $env:ISC_USER = $User
@@ -48,35 +52,37 @@ try {
     # Normalize $WithVersion
     $WithVersion = $WithVersion.ToUpperInvariant()
 
-    $targetFile = "$($SourceFile).$WithVersion"
-    if ($WithVersion -eq $sourceVersion) {
-        $targetFile = "$($SourceFile).CERT"
-    }
-
-    if (Test-Path $targetFile) {
-        if ($PSCmdlet.ShouldProcess($targetFile, 'Delete target database')) {
-            Remove-Item $targetFile -Force
+    if (-not $TargetFile) {
+        $TargetFile = "$($SourceFile).$WithVersion"
+        if ($WithVersion -eq $sourceVersion) {
+            $TargetFile = "$($SourceFile).CERT"
         }
     }
 
-    $sourceLog = "$($targetFile).source.log"
+    if (Test-Path $TargetFile) {
+        if ($PSCmdlet.ShouldProcess($TargetFile, 'Delete target database')) {
+            Remove-Item $TargetFile -Force
+        }
+    }
+
+    $sourceLog = "$($TargetFile).source.log"
     if (Test-Path $sourceLog) {
         if ($PSCmdlet.ShouldProcess($sourceLog, 'Delete source log')) {
             Remove-Item $sourceLog -Force
         }
     }
 
-    $targetLog = "$($targetFile).target.log"
+    $targetLog = "$($TargetFile).target.log"
     if (Test-Path $targetLog) {
         if ($PSCmdlet.ShouldProcess($targetLog, 'Delete target log')) {
             Remove-Item $targetLog -Force
         }
     }
 
-    if ($PSCmdlet.ShouldProcess($targetFile, "Stream database to version '$WithVersion'")) {
+    if ($PSCmdlet.ShouldProcess($TargetFile, "Stream database to version '$WithVersion'")) {
         $startTime = Get-Date
         # With -NT the conversion appears to be 4% faster -- TODO: Test with larger databases
-        CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$WithVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $targetFile"
+        CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$WithVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $TargetFile"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
 
         if ($LASTEXITCODE) {

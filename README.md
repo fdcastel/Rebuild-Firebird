@@ -21,7 +21,7 @@ You don't need an installation of Firebird Server.
 ## Usage
 
 ```powershell
-Rebuild-Firebird.ps1 [-SourceFile] <string> [[-WithVersion] <string>] [[-User] <string>] [[-Password] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Rebuild-Firebird.ps1 [-SourceFile] <string> [[-User] <string>] [[-Password] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Inform the source database through `-SourceFile` parameter. The ODS version will be detected automatically.
@@ -32,7 +32,11 @@ Target database will have the same name as source plus the suffix `.CERT`.
 
 ### Convert database to a different ODS
 
-Use the `-WithVersion` parameter to choose the target Firebird version (default = `fb40`).
+```powershell
+Rebuild-Firebird.ps1 [-SourceFile] <string> [[-WithVersion] <string>] [[-User] <string>] [[-Password] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+Use the `-WithVersion` parameter to choose the target Firebird version.
 
 Currently allowed conversions are:
 

@@ -14,9 +14,12 @@ Param(
     )]
     [String]$SourceFile,
 
-    [Parameter()]
-    [ValidateSet('fb30','fb40')]
-    [String]$TargetVersion = 'fb40',
+    [Parameter(ParameterSetName='Convert', Mandatory=$True)]
+    [ValidateSet('FB25','FB30','FB40')]
+    [String]$TargetVersion = 'FB40',
+
+    [Parameter(ParameterSetName='Rebuild', Mandatory=$True)]
+    [Switch]$RebuildOnly,
 
     [Parameter()]
     [String]$User = 'SYSDBA',
@@ -30,7 +33,7 @@ $env:ISC_PASSWORD = $Password
 try {
     Write-Verbose 'Detecting source database version...'
     $sourceVersion = $null
-    'fb25','fb30','fb40' | ForEach-Object {
+    'FB25','FB30','FB40' | ForEach-Object {
         if (-not $sourceVersion) {
             & .\$_\gstat.exe -h $SourceFile 2>$null 1>$null 
             if ($?) {
@@ -43,7 +46,18 @@ try {
         throw "Source database is of an unknown version."
     }
 
-    $targetFile = "$($SourceFile).$targetVersion"
+    if ($RebuildOnly) {
+        $TargetVersion = $sourceVersion
+    }
+
+    # Normalize $TargetVersion
+    $TargetVersion = $TargetVersion.ToUpperInvariant()
+
+    $targetFile = "$($SourceFile).$TargetVersion"
+    if ($TargetVersion -eq $sourceVersion) {
+        $targetFile = "$($SourceFile).CERT"
+    }
+
     if (Test-Path $targetFile) {
         if ($PSCmdlet.ShouldProcess($targetFile, 'Delete target database')) {
             Remove-Item $targetFile -Force
@@ -64,7 +78,7 @@ try {
         }
     }
 
-    if ($PSCmdlet.ShouldProcess($targetFile, 'Migrate database')) {
+    if ($PSCmdlet.ShouldProcess($targetFile, "Migrate database to version '$TargetVersion'")) {
         $startTime = Get-Date
         # With -NT the conversion appears to be 4% faster -- TODO: Test with larger databases
         CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$TargetVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $targetFile"

@@ -23,8 +23,11 @@ Param(
     [String]$Password = 'masterkey',
 
     [Parameter()]
-    [String]$TargetFile = $null
+    [String]$TargetFile = $null,
 
+    [Parameter()]
+    [ValidateSet(4096, 8192, 16384, 32768)]
+    [String]$PageSize = $null
 )
 
 $env:ISC_USER = $User
@@ -59,6 +62,10 @@ try {
         }
     }
 
+    if ($PageSize) {
+        $pageSizeArgument = " -page_size $PageSize"
+    }
+
     if (Test-Path $TargetFile) {
         if ($PSCmdlet.ShouldProcess($TargetFile, 'Delete target database')) {
             Remove-Item $TargetFile -Force
@@ -81,9 +88,17 @@ try {
 
     if ($PSCmdlet.ShouldProcess($TargetFile, "Stream database to version '$WithVersion'")) {
         $startTime = Get-Date
+
         # With -NT the conversion appears to be 4% faster -- TODO: Test with larger databases
-        CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$WithVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $TargetFile"
+        $sourceCommand = ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
+        
+        $restoreCommand = ".\$WithVersion\gbak.exe -z -create_database$($pageSizeArgument) -verify -statistics T -y $targetLog stdin $TargetFile"
+        
+        CMD.EXE /C "$sourceCommand | $restoreCommand"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
+
+        "`nBackup command:`n    $sourceCommand" | Add-Content -Path $sourceLog
+        "`nRestore command:`n    $restoreCommand" | Add-Content -Path $targetLog
 
         if ($LASTEXITCODE) {
             if (Test-Path $sourceLog) {

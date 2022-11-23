@@ -1,6 +1,8 @@
-# Firebird-Convert
+# Rebuild-Firebird
 
-Convert a Firebird database between different On-Disk-Structure versions.
+Rebuild a Firebird database using stream conversion (without intermediate files).
+
+Can also be used to migrate a database between different On-Disk-Structure versions.
 
 Based on [Fast conversion of Firebird 2.5 databases to Firebird 3.0](https://ib-aid.com/en/articles/fast-conversion-of-firebird-2-5-databases-to-firebird-3/) article from Basil Sidorov.
 
@@ -18,15 +20,19 @@ You don't need an installation of Firebird Server.
 
 ## Usage
 
-### Convert (to a higher ODS version)
-
 ```powershell
-.\Firebird-Convert.ps1 -SourceFile <string> -TargetVersion <string> [-User <string>] [-Password <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Rebuild-Firebird.ps1 [-SourceFile] <string> [[-WithVersion] <string>] [[-User] <string>] [[-Password] <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 Inform the source database through `-SourceFile` parameter. The ODS version will be detected automatically.
 
-Use the `-TargetVersion` parameter to choose the target Firebird version (default = `fb40`).
+Target database will have the same name as source plus the suffix `.CERT`.
+
+
+
+### Convert database to a different ODS
+
+Use the `-WithVersion` parameter to choose the target Firebird version (default = `fb40`).
 
 Currently allowed conversions are:
 
@@ -35,18 +41,6 @@ Currently allowed conversions are:
   - From `fb30` to `fb40`
 
 Target database will have the same name as source plus the target version added as suffix.
-
-
-
-### Rebuild (with same ODS version)
-
-```powershell
-.\Firebird-Convert.ps1 -SourceFile <string> -RebuildOnly [-User <string>] [-Password <string>] [-WhatIf] [-Confirm] [<CommonParameters>]
-```
-
-Inform the source database through `-SourceFile` parameter. The ODS version will be detected automatically.
-
-Target database will have the same name as source plus the suffix `.CERT`.
 
 
 

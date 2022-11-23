@@ -1,7 +1,5 @@
 #
-# Firebird-Convert.ps1
-#
-# Convert a Firebird database between different On-Disk-Structure versions.
+# Rebuild a Firebird database using stream conversion (without intermediate files).
 #
 # Source: https://ib-aid.com/en/articles/fast-conversion-of-firebird-2-5-databases-to-firebird-3/
 #
@@ -14,12 +12,9 @@ Param(
     )]
     [String]$SourceFile,
 
-    [Parameter(ParameterSetName='Convert', Mandatory=$True)]
+    [Parameter()]
     [ValidateSet('FB25','FB30','FB40')]
-    [String]$TargetVersion = 'FB40',
-
-    [Parameter(ParameterSetName='Rebuild', Mandatory=$True)]
-    [Switch]$RebuildOnly,
+    [String]$WithVersion = $null,
 
     [Parameter()]
     [String]$User = 'SYSDBA',
@@ -46,15 +41,15 @@ try {
         throw "Source database is of an unknown version."
     }
 
-    if ($RebuildOnly) {
-        $TargetVersion = $sourceVersion
+    if (-not $WithVersion) {
+        $WithVersion = $sourceVersion
     }
 
-    # Normalize $TargetVersion
-    $TargetVersion = $TargetVersion.ToUpperInvariant()
+    # Normalize $WithVersion
+    $WithVersion = $WithVersion.ToUpperInvariant()
 
-    $targetFile = "$($SourceFile).$TargetVersion"
-    if ($TargetVersion -eq $sourceVersion) {
+    $targetFile = "$($SourceFile).$WithVersion"
+    if ($WithVersion -eq $sourceVersion) {
         $targetFile = "$($SourceFile).CERT"
     }
 
@@ -78,10 +73,10 @@ try {
         }
     }
 
-    if ($PSCmdlet.ShouldProcess($targetFile, "Migrate database to version '$TargetVersion'")) {
+    if ($PSCmdlet.ShouldProcess($targetFile, "Stream database to version '$WithVersion'")) {
         $startTime = Get-Date
         # With -NT the conversion appears to be 4% faster -- TODO: Test with larger databases
-        CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$TargetVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $targetFile"
+        CMD.EXE /C ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout | .\$WithVersion\gbak.exe -z -create_database -verify -statistics T -y $targetLog stdin $targetFile"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
 
         if ($LASTEXITCODE) {

@@ -27,7 +27,11 @@ Param(
 
     [Parameter()]
     [ValidateSet(4096, 8192, 16384, 32768)]
-    [String]$PageSize = $null
+    [String]$PageSize = $null,
+
+    [Parameter()]
+    [Switch]$NoGarbageCollector
+
 )
 
 $env:ISC_USER = $User
@@ -62,8 +66,15 @@ try {
         }
     }
 
+    $sourceExtraArguments = $null
+    $targetExtraArguments = $null
+
     if ($PageSize) {
-        $pageSizeArgument = " -page_size $PageSize"
+        $targetExtraArguments += " -page_size $PageSize"
+    }
+
+    if ($NoGarbageCollector) {
+        $sourceExtraArguments += " -garbage_collect"
     }
 
     if (Test-Path $TargetFile) {
@@ -90,9 +101,9 @@ try {
         $startTime = Get-Date
 
         # With -NT the conversion appears to be 4% faster -- TODO: Test with larger databases
-        $sourceCommand = ".\$sourceVersion\gbak.exe -z -backup_database -garbage_collect -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
+        $sourceCommand = ".\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
         
-        $restoreCommand = ".\$WithVersion\gbak.exe -z -create_database$($pageSizeArgument) -verify -statistics T -y $targetLog stdin $TargetFile"
+        $restoreCommand = ".\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
         
         CMD.EXE /C "$sourceCommand | $restoreCommand"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds

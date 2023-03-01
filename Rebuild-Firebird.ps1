@@ -39,9 +39,11 @@ $env:ISC_PASSWORD = $Password
 try {
     Write-Verbose 'Detecting source database version...'
     $sourceVersion = $null
+    $scriptPath = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
+
     'FB25','FB30','FB40' | ForEach-Object {
         if (-not $sourceVersion) {
-            & .\$_\gstat.exe -h $SourceFile 2>$null 1>$null 
+            & $scriptPath\$_\gstat.exe -h $SourceFile 2>$null 1>$null 
             if ($?) {
                 $sourceVersion = $_
                 Write-Verbose "Source database is '$sourceVersion'."
@@ -101,9 +103,9 @@ try {
         $startTime = Get-Date
 
         # Using -NT option makes backup 5% faster (tested with a 320GB database)
-        $sourceCommand = ".\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
+        $sourceCommand = "$scriptPath\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
         
-        $restoreCommand = ".\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
+        $restoreCommand = "$scriptPath\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
         
         CMD.EXE /C "$sourceCommand | $restoreCommand"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds

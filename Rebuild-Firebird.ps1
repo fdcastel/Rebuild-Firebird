@@ -27,11 +27,7 @@ Param(
 
     [Parameter()]
     [ValidateSet(4096, 8192, 16384, 32768)]
-    [String]$PageSize = $null,
-
-    [Parameter()]
-    [Switch]$NoGarbageCollector
-
+    [String]$PageSize = $null
 )
 
 $env:ISC_USER = $User
@@ -75,10 +71,6 @@ try {
         $targetExtraArguments += " -page_size $PageSize"
     }
 
-    if ($NoGarbageCollector) {
-        $sourceExtraArguments += " -garbage_collect"
-    }
-
     if (Test-Path $TargetFile) {
         if ($PSCmdlet.ShouldProcess($TargetFile, 'Delete target database')) {
             Remove-Item $TargetFile -Force
@@ -102,8 +94,12 @@ try {
     if ($PSCmdlet.ShouldProcess($TargetFile, "Stream database to version '$WithVersion'")) {
         $startTime = Get-Date
 
+        # Using -G option inhibits Firebird garbage collection, speeding up the backup process if a lot of updates have been done.
+        #   https://firebirdsql.org/file/documentation/html/en/firebirddocs/gbak/firebird-gbak.html#gbak-backup-speedup
+
         # Using -NT option makes backup 5% faster (tested with a 320GB database)
-        $sourceCommand = "$scriptPath\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
+        
+        $sourceCommand = "$scriptPath\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -g -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
         
         $restoreCommand = "$scriptPath\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
         

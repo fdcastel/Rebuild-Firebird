@@ -103,23 +103,40 @@ try {
         
         $restoreCommand = "$scriptPath\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
         
+        # Powershell redirection is hell on Earth. Use CMD.
         CMD.EXE /C "$sourceCommand | $restoreCommand"
         $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
 
+        # Adds each command used to log files. "-Skip 3" (ahead) will omit this.
         "`nBackup command:`n    $sourceCommand" | Add-Content -Path $sourceLog
         "`nRestore command:`n    $restoreCommand" | Add-Content -Path $targetLog
 
+        # $LASTEXITCODE is the exit code of $restoreCommand (last command of pipe).
         if ($LASTEXITCODE) {
             if (Test-Path $sourceLog) {
-                Write-Warning "----- [$sourceLog (last 10 lines)] -----"
-                Get-Content $sourceLog | Select-Object -Last 10 | Write-Warning
-                Write-Warning "----- [$sourceLog EOF] -----"
+                $errors = Get-Content $sourceLog | Select-String -SimpleMatch 'gbak: ERROR:'
+                if ($errors) {
+                    "----- [$sourceLog (errors)] -----" | Write-Warning
+                    $errors | Write-Warning
+                }
+
+                "----- [$sourceLog (last 10 lines)] -----" | Write-Warning 
+                Get-Content $sourceLog | Select-Object -Last 10 -Skip 3 | Write-Warning
+
+                "----- [$sourceLog EOF] -----" | Write-Warning
             }
     
             if (Test-Path $targetLog) {
-                Write-Warning "----- [$targetLog (last 10 lines)] -----"
-                Get-Content $targetLog | Select-Object -Last 10 | Write-Warning
-                Write-Warning "----- [$targetLog EOF] -----"
+                $errors = Get-Content $targetLog | Select-String -SimpleMatch 'gbak: ERROR:'
+                if ($errors) {
+                    "----- [$targetLog (errors)] -----" | Write-Warning
+                    $errors | Write-Warning
+                }
+
+                "----- [$targetLog (last 10 lines)] -----" | Write-Warning
+                Get-Content $targetLog | Select-Object -Last 10 -Skip 3 | Write-Warning
+
+                "----- [$targetLog EOF] -----" | Write-Warning
             }
     
             throw "Conversion failed. Please see log files."

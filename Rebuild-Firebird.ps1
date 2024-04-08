@@ -13,7 +13,7 @@ Param(
     [String]$SourceFile,
 
     [Parameter()]
-    [ValidateSet('FB25','FB30','FB40')]
+    [ValidateSet('FB25','FB30','FB40','FB50')]
     [String]$WithVersion = $null,
 
     [Parameter()]
@@ -37,7 +37,7 @@ try {
     $sourceVersion = $null
     $scriptPath = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
 
-    'FB25','FB30','FB40' | ForEach-Object {
+    'FB25','FB30','FB40','FB50' | ForEach-Object {
         if (-not $sourceVersion) {
             & $scriptPath\$_\gstat.exe -h $SourceFile 2>$null 1>$null 
             if ($?) {

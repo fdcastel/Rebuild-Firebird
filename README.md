@@ -39,12 +39,6 @@ Rebuild-Firebird.ps1 [-SourceFile] <string> [[-WithVersion] <string>] [[-User] <
 
 Use the `-WithVersion` parameter to choose the target Firebird version.
 
-Currently allowed conversions are:
-
-  - From `fb25` to `fb30`
-  - From `fb25` to `fb40`
-  - From `fb30` to `fb40`
-
 The target database will have the same name as source plus the target version added as suffix. You may use `-TargetFile` to change this.
 
 

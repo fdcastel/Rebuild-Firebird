@@ -12,9 +12,13 @@ Requires a 64-bit Windows.
 
 ## How to install
 
-Just checkout this repository. All necessary files are included.
+To download all scripts into your `$env:temp` folder:
 
-You don't need an installation of Firebird Server.
+```powershell
+iex (iwr 'https://raw.githubusercontent.com/fdcastel/Rebuild-Firebird/master/bootstrap.ps1' -UseBasicParsing)
+```
+
+All necessary files are included. You don't need an installation of Firebird Server.
 
 
 

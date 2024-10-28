@@ -18,7 +18,7 @@ To download all scripts into your `$env:temp` folder:
 iex (iwr 'https://raw.githubusercontent.com/fdcastel/Rebuild-Firebird/master/bootstrap.ps1' -UseBasicParsing)
 ```
 
-All necessary files are included. You don't need an installation of Firebird Server.
+All necessary files are included or downloaded. You don't need an installation of Firebird Server.
 
 
 

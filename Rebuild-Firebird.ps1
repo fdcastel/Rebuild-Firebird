@@ -7,13 +7,13 @@
 [CmdletBinding(SupportsShouldProcess)]
 Param(
     [Parameter(
-        Mandatory=$True,
-        ValueFromPipeline=$True
+        Mandatory = $True,
+        ValueFromPipeline = $True
     )]
     [String]$SourceFile,
 
     [Parameter()]
-    [ValidateSet('FB25','FB30','FB40','FB50')]
+    [ValidateSet('FB25', 'FB30', 'FB40', 'FB50')]
     [String]$WithVersion = $null,
 
     [Parameter()]
@@ -30,16 +30,31 @@ Param(
     [String]$PageSize = $null
 )
 
+
+
+#
+# Main
+#
+
+$ErrorActionPreference = 'Stop'
+
 $env:ISC_USER = $User
 $env:ISC_PASSWORD = $Password
 try {
+    if (-not (Test-Path $SourceFile)) {
+        throw "Source file '$SourceFile' does not exists."
+    }
+
     Write-Verbose 'Detecting source database version...'
     $sourceVersion = $null
-    $scriptPath = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
 
-    'FB25','FB30','FB40','FB50' | ForEach-Object {
+    $sourceVersionRoot = $null
+    # TODO: Revert this sequence, in the future.
+    'FB25', 'FB30', 'FB40', 'FB50' | ForEach-Object {
         if (-not $sourceVersion) {
-            & $scriptPath\$_\gstat.exe -h $SourceFile 2>$null 1>$null 
+            $sourceVersionRoot = & ./Requires-Firebird.ps1 -Version $_
+            $sourceGstat = Join-Path $sourceVersionRoot 'gstat.exe'
+            & $sourceGstat -h $SourceFile 2>$null 1>$null 
             if ($?) {
                 $sourceVersion = $_
                 Write-Verbose "Source database is '$sourceVersion'."
@@ -58,9 +73,9 @@ try {
     $WithVersion = $WithVersion.ToUpperInvariant()
 
     if (-not $TargetFile) {
-        $TargetFile = "$($SourceFile).$WithVersion"
+        $TargetFile = "${SourceFile}.$WithVersion"
         if ($WithVersion -eq $sourceVersion) {
-            $TargetFile = "$($SourceFile).CERT"
+            $TargetFile = "${SourceFile}.CERT"
         }
     }
 
@@ -77,21 +92,21 @@ try {
         }
     }
 
-    $sourceLog = "$($TargetFile).source.log"
+    $sourceLog = "${TargetFile}.source.log"
     if (Test-Path $sourceLog) {
         if ($PSCmdlet.ShouldProcess($sourceLog, 'Delete source log')) {
             Remove-Item $sourceLog -Force
         }
     }
 
-    $targetLog = "$($TargetFile).target.log"
+    $targetLog = "${TargetFile}.target.log"
     if (Test-Path $targetLog) {
         if ($PSCmdlet.ShouldProcess($targetLog, 'Delete target log')) {
             Remove-Item $targetLog -Force
         }
     }
 
-    if ($PSCmdlet.ShouldProcess($TargetFile, "Stream database to version '$WithVersion'")) {
+    if ($PSCmdlet.ShouldProcess($TargetFile, "Stream database ('$sourceVersion' -> '$WithVersion')")) {
         $startTime = Get-Date
 
         # Using -G option inhibits Firebird garbage collection, speeding up the backup process if a lot of updates have been done.
@@ -99,9 +114,11 @@ try {
 
         # Using -NT option makes backup 5% faster (tested with a 320GB database)
         
-        $sourceCommand = "$scriptPath\$sourceVersion\gbak.exe -z -backup_database$($sourceExtraArguments) -g -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
+        $sourceGbak = Join-Path $sourceVersionRoot 'gbak.exe'
+        $sourceCommand = "$sourceGbak -z -backup_database${sourceExtraArguments} -g -nt -verify -statistics T -y $sourceLog $SourceFile stdout"
         
-        $restoreCommand = "$scriptPath\$WithVersion\gbak.exe -z -create_database$($targetExtraArguments) -verify -statistics T -y $targetLog stdin $TargetFile"
+        $targetGbak = Join-Path $env:FIREBIRD_ROOT $WithVersion.ToUpperInvariant() | Join-Path -ChildPath 'gbak.exe'
+        $restoreCommand = "$targetGbak -z -create_database${targetExtraArguments} -verify -statistics T -y $targetLog stdin $TargetFile"
         
         # Powershell redirection is hell on Earth. Use CMD.
         CMD.EXE /C "$sourceCommand | $restoreCommand"

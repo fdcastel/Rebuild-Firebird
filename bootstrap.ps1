@@ -2,10 +2,12 @@
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 $url = 'https://codeload.github.com/fdcastel/Rebuild-Firebird/zip/master'
-$fileName = Join-Path $env:TEMP 'Rebuild-Firebird-master.zip'
+
+$tempFolder = [System.IO.Path]::GetTempPath()
+$fileName = Join-Path $tempFolder 'Rebuild-Firebird-master.zip'
 
 $ProgressPreference = 'SilentlyContinue'    # Faster downloads
 Invoke-RestMethod $url -OutFile $fileName
-Expand-Archive $fileName -DestinationPath $env:TEMP -Force
+Expand-Archive $fileName -DestinationPath $tempFolder -Force
 
-Set-Location "$env:TEMP\Rebuild-Firebird-master"
+Join-Path $tempFolder 'Rebuild-Firebird-master' | Set-Location

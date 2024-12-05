@@ -23,6 +23,7 @@ function Invoke-DownloadAndExtract([string]$Url, [string]$TargetPath) {
     $fullZipFile = Join-Path $env:FIREBIRD_ROOT $zipFile
 
     Write-Verbose "  Downloading '$zipFile'..."
+    $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest $Url -OutFile $fullZipFile -Verbose:$false
 
     Write-Verbose "  Extracting '$zipFile'..."

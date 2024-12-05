@@ -119,6 +119,9 @@ try {
         
         $targetGbak = Join-Path $env:FIREBIRD_ROOT $WithVersion.ToUpperInvariant() | Join-Path -ChildPath 'gbak.exe'
         $restoreCommand = "$targetGbak -z -create_database${targetExtraArguments} -verify -statistics T -y $targetLog stdin $TargetFile"
+
+        # Ensure target version is installed.
+        & ./Requires-Firebird.ps1 -Version $WithVersion
         
         # Powershell redirection is hell on Earth. Use CMD.
         CMD.EXE /C "$sourceCommand | $restoreCommand"
